@@ -21,13 +21,12 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow React frontend
-        config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",  // Vite default port
-                "http://localhost:3000"   // Alternative React port
+        // Allow local dev frontends (any localhost port)
+        config.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*"
         ));
 
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

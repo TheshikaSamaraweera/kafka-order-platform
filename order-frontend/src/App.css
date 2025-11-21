@@ -1,0 +1,10 @@
+/* src/App.css */
+
+/* Remove all default Vite styles - we're using Tailwind */
+
+/* Optional: Add any custom utility classes here if needed */
+
+/* Toast notifications custom styling */
+.react-hot-toast {
+  z-index: 9999;
+}
