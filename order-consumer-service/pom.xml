@@ -77,7 +77,14 @@
 			<artifactId>spring-kafka-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
+
+        <dependency>
+            <groupId>com.bigdata</groupId>
+            <artifactId>avro-schemas</artifactId>
+            <version>1.0.0</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>
@@ -119,3 +126,5 @@
 
 
 </project>
+
+<!--order consumer pmo-->
