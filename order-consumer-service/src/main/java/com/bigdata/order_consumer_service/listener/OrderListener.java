@@ -5,6 +5,7 @@ import com.bigdata.order_consumer_service.exception.ErrorCategory;
 import com.bigdata.order_consumer_service.exception.PermanentProcessingException;
 import com.bigdata.order_consumer_service.exception.TemporaryProcessingException;
 import com.bigdata.order_consumer_service.repository.FailedOrderRepository;
+import com.bigdata.order_consumer_service.service.OrderService;
 import com.bigdata.schema.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +19,6 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Component;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -29,6 +28,7 @@ import java.util.Random;
 public class OrderListener {
 
     private final FailedOrderRepository failedOrderRepository;
+    private final OrderService orderService;
     private final Random random = new Random();
 
     @RetryableTopic(
@@ -47,6 +47,8 @@ public class OrderListener {
     public void listen(
             Order order,
             @Header(value = KafkaHeaders.RECEIVED_TOPIC, required = false) String topic,
+            @Header(value = KafkaHeaders.RECEIVED_PARTITION, required = false) Integer partition,
+            @Header(value = KafkaHeaders.OFFSET, required = false) Long offset,
             @Header(value = "cid", required = false) byte[] cidBytes,
             Acknowledgment acknowledgment
     ) {
@@ -67,13 +69,12 @@ public class OrderListener {
 
         try {
             processOrder(order, cid);
-
-            // Manual acknowledgment (commit offset)
+            orderService.saveOrder(order, cid, topic, partition, offset);
             if (acknowledgment != null) {
                 acknowledgment.acknowledge();
             }
 
-            log.info(" Successfully processed order: {} | Product: {}",
+            log.info("Successfully processed and saved order: {} | Product: {}",
                     order.getOrderId(), order.getProduct());
 
         } catch (TemporaryProcessingException e) {
@@ -168,12 +169,9 @@ public class OrderListener {
         log.info(" Order processed successfully | Order: {}", orderId);
     }
 
-    /**
-     * Validation - Permanent Failures
-     */
+
     private void validateOrder(String orderId, String product, float price) {
 
-        // Simulate: Invalid price
         if (price <= 0) {
             throw new PermanentProcessingException(
                     ErrorCategory.INVALID_PRICE,
@@ -181,7 +179,7 @@ public class OrderListener {
             );
         }
 
-        // Simulate: Price too high (business rule)
+
         if (price > 10000) {
             throw new PermanentProcessingException(
                     ErrorCategory.VALIDATION_ERROR,
@@ -189,7 +187,7 @@ public class OrderListener {
             );
         }
 
-        // Simulate: Empty product name
+
         if (product == null || product.trim().isEmpty()) {
             throw new PermanentProcessingException(
                     ErrorCategory.VALIDATION_ERROR,
@@ -197,7 +195,7 @@ public class OrderListener {
             );
         }
 
-        // Demo: Trigger validation error with specific order ID pattern
+
         if (orderId.endsWith("88")) {
             throw new PermanentProcessingException(
                     ErrorCategory.VALIDATION_ERROR,
@@ -209,7 +207,7 @@ public class OrderListener {
 
     private void checkBusinessRules(String orderId, String product, float price) {
 
-        // Simulate: Duplicate order detection
+
         if (orderId.endsWith("77")) {
             throw new PermanentProcessingException(
                     ErrorCategory.DUPLICATE_ORDER,
@@ -217,7 +215,7 @@ public class OrderListener {
             );
         }
 
-        // Simulate: Product not in catalog
+
         if (orderId.endsWith("66")) {
             throw new PermanentProcessingException(
                     ErrorCategory.PRODUCT_NOT_FOUND,
@@ -225,7 +223,7 @@ public class OrderListener {
             );
         }
 
-        // Simulate: Insufficient inventory
+
         if (orderId.endsWith("55")) {
             throw new PermanentProcessingException(
                     ErrorCategory.INSUFFICIENT_INVENTORY,
